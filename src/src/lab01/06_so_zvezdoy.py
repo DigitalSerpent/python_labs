@@ -1,6 +1,4 @@
 import sys
-sys.stdout.reconfigure(encoding='utf-8')
-
 N = int(input())
 in_person = 0
 remote = 0
