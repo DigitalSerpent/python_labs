@@ -57,12 +57,16 @@ print(f"{hours}:{minutes:02d}")
 Задание 5
 
 ```python
-full_name = input("ФИО: ")
-words = full_name.strip().split()
+full_name = input("ФИО: ").strip()
+chars = len(full_name.replace(' ', ''))
+probely = full_name.count(' ')
+
+words = full_name.split()
 initials = ''.join(word[0].upper() for word in words if word)
-length = len(full_name.strip())
+
+
 print(f"Инициалы: {initials}.")
-print(f"Длина: {length}")
+print(f"Длина: {probely + chars}")
 ```
 
 ![05_initials_and_len](./images/lab01/ex05.png.png)
