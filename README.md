@@ -244,7 +244,7 @@ except ValueError as mistake:
 
 def data(chars):
     """
-    переводит данные студента в строчку с иницыалами
+    переводит данные студента в строчку с инициалами
     """
     if not isinstance(chars, tuple) or len(chars) != 3:
         raise ValueError()
