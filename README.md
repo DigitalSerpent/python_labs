@@ -1,8 +1,8 @@
-## Лабораторная работа 1
+# Лабораторная работа 1
 
 
 
-Задание 1
+### Задание 1
 
 ```python
 name = input("Имя: ")
@@ -13,7 +13,7 @@ print(f"Привет, {name}! Через год тебе будет {age + 1}.")
 ![01_greeting](./images/lab01/ex01.png.png)
 
 
-Задание 2
+### Задание 2
 
 ```python
 a = float(input("a: ").replace(",", "."))
@@ -26,7 +26,7 @@ print(f"sum={sum_ab:.2f}; avg={avg_ab:.2f}")
 ![02_sum_avg](./images/lab01/ex02.png.png)
 
 
-Задание 3
+### Задание 3
 
 ```python
 price = float(input("price: ").replace(",", "."))
@@ -43,7 +43,7 @@ print(f"Итого к оплате:    {total:.2f} ₽")
 ![03_discount_vat](./images/lab01/ex03.png.png)
 
 
-Задание 4
+### Задание 4
 
 ```python
 m = int(input("Минуты: "))
@@ -54,7 +54,7 @@ print(f"{hours}:{minutes:02d}")
 
 ![04_minutes_to_hhmm](./images/lab01/ex04.png.png)
 
-Задание 5
+### Задание 5
 
 ```python
 full_name = input("ФИО: ").strip()
@@ -71,7 +71,7 @@ print(f"Длина: {chars + 2}")
 ![05_initials_and_len](./images/lab01/ex05.png.png)
 
 
-Задание 7
+### Задание 7
 
 ```python
 s = input()
@@ -102,9 +102,9 @@ print(result)
 ![07_so_zvezdochkoy](./images/lab01/ex07.png.png)
 
 
-## Лабораторная работа 2
+# Лабораторная работа 2
 
-Задание 1(A)
+### Задание 1(A)
 
 ```python
 def min_max(nums):
@@ -163,7 +163,7 @@ except TypeError as mistake:
 ![arrays.py](./images/lab02/exA.png)
 
 
-Задание 2(B)
+### Задание 2(B)
 
 ```python
 
@@ -238,7 +238,7 @@ except ValueError as mistake:
 ![matrix.py](./images/lab02/exB.png)
 
 
-Задание 3(C)
+### Задание 3(C)
 
 ```python
 
@@ -288,10 +288,10 @@ print(data(("  сидорова  анна   сергеевна ", "ABB-01", 3.99
 
 
 
-## Лабораторная работа 3
+# Лабораторная работа 3
  
 
-Задание А
+### Задание А
 
 
 
@@ -366,7 +366,10 @@ print(top_n(freq2, 2))
 
 ![](./images/lab03/ex01.png)
 
-Задание В
+### Задание В
+
+Мой код полностью соответствовал заданию - читал из stdin и корректно обрабатывал текст. Но появилась проблема с pipe в powershell из-за несовместимости кодировок между powershell (UTF-16) и python (UTF-8).
+Поэтому я сделала несколько вариантов. В первом я обрабатываю символы срвзу как текст:
  
 ```python
 import sys
@@ -394,3 +397,32 @@ if __name__ == "__main__":
 
 ![](./images/lab03/ex02.png)
 
+Во втором я ввожу текст не через echo, а просто запускаю код, который уже и обрабатывает текст:
+
+```python
+import sys
+from lib.text import *
+
+def main():
+    text = sys.stdin.read()
+    # читаю из стдина
+    normalized_text = normalize(text)
+    tokens = tokenize(normalized_text)
+    
+    print(f"Всего слов: {len(tokens)}")
+    print(f"Уникальных слов: {len(set(tokens))}")
+    print("Топ-5:")
+    
+    freq_dict = count_freq(tokens)
+    top_words = top_n(freq_dict, 5)
+    
+    for word, count in top_words:
+        print(f"{word}:{count}")
+
+if __name__ == "__main__":
+    main()
+```
+
+![](./images/lab03/ex02_2.png)
+
+(Ctrl+Z + Enter)
