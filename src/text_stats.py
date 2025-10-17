@@ -2,8 +2,7 @@ import sys
 from lib.text import *
 
 def main():
-    text = "Привет, мир! Привет!!!"
-    
+    text = sys.stdin.read()
     normalized_text = normalize(text)
     tokens = tokenize(normalized_text)
     
