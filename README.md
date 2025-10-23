@@ -504,9 +504,9 @@ if __name__ == "__main__":
 Как использовать:
 ```python
 # Из файла
-python script.py < text_file.txt
+python text_stats_2.py < text_file.txt
 # Через пайп
-echo "Привет мир! Привет!!!" | python script.py
+echo "Привет мир! Привет!!!" | python text_stats_2.py
 ```
 
 
