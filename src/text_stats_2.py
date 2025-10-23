@@ -2,7 +2,7 @@ import sys
 import os
 from lib.text import *
 
-table = True  
+table = True
 
 def print_table(top_words):
     if not top_words:

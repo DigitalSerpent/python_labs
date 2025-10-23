@@ -501,4 +501,71 @@ if __name__ == "__main__":
     main()
 ```
 
+Как использовать:
+```python
+# Из файла
+python script.py < text_file.txt
+# Через пайп
+echo "Привет мир! Привет!!!" | python script.py
+```
+
+
+
+
 ![](./images/lab03/ex3.png)
+
+# Лабораторная работа 4
+### Задание А
+ ```python
+ import csv
+from pathlib import Path
+
+
+def read_text(path, encoding="utf-8"):#как в задании, читает файл и отдает текст
+    path = Path(path)
+    return path.read_text(encoding=encoding)
+
+
+def write_csv(rows, path):#запись таблицы
+    path = Path(path)
+    rows = list(rows)
+    
+    if rows:
+        first_len = len(rows[0])
+        for i, row in enumerate(rows):
+            if len(row) != first_len:
+                raise ValueError() 
+    path.parent.mkdir(parents=True, exist_ok=True)#ошибка длин строк
+    
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+
+def ensure_parent_dir(path):#создание папок
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+ ```
+
+ Как менять кодировки:
+ ```python
+ from io_txt_csv import read_text
+# 1. UTF-8 (стандартная, для современных файлов)
+text = read_text("file.txt") # по умолчанию
+text = read_text("file.txt", encoding="utf-8")
+# 2.для русских текстов в Windows
+text = read_text("file.txt", encoding="cp1251")
+# 3.для старых русских файлов
+text = read_text("file.txt", encoding="koi8-r")
+# 4.западноевропейские языки
+text = read_text("file.txt", encoding="iso-8859-1")
+# ... и так далее
+ ```
+ кодировка неправильная:
+ ```python
+ try:
+    text = read_text("file.txt", encoding="utf-8")
+except UnicodeDecodeError:
+    print("Ошибка")
+    text = read_text("file.txt", encoding="cp1251")
+ ```
