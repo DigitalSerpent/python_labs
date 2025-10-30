@@ -517,55 +517,72 @@ echo "Привет мир! Привет!!!" | python text_stats_2.py
 # Лабораторная работа 4
 ### Задание А
  ```python
- import csv
-from pathlib import Path
+ from pathlib import Path
+import csv
 
+def read_text(path: str | Path, encoding: str = "utf-8") -> str:
+    """
+    Читает файл и возвращает содержимое как строкчку
 
-def read_text(path, encoding="utf-8"):#как в задании, читает файл и отдает текст
+    """
     path = Path(path)
     return path.read_text(encoding=encoding)
 
-
-def write_csv(rows, path):#запись таблицы
+def write_csv(rows: list[tuple | list], path: str | Path, header: tuple[str, ...] | None = None) -> None:
+    """
+    Создаёт CSV файл с данными
+    rows - список строк данных
+    header - заголовки столбцов
+    Пример:
+        write_csv([("word", "count"), ("test", 3)], "data.csv")
+    """
     path = Path(path)
-    rows = list(rows)
-    
-    if rows:
-        first_len = len(rows[0])
-        for i, row in enumerate(rows):
-            if len(row) != first_len:
-                raise ValueError() 
-    path.parent.mkdir(parents=True, exist_ok=True)#ошибка длин строк
-    
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerows(rows)
-
-
-def ensure_parent_dir(path):#создание папок
-    path = Path(path)
+    # Создаю папки если их нет
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Проверяю что все строки одинаковой длины
+    if rows:
+        first_length = len(rows[0])
+        for i, row in enumerate(rows):
+            if len(row) != first_length:
+                raise ValueError(f"Строка {i} имеет другую длину")
+    # Записываю CSV
+    with path.open('w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if header:
+            writer.writerow(header)
+        writer.writerows(rows)
  ```
 
- Как менять кодировки:
- ```python
- from io_txt_csv import read_text
-# 1. UTF-8 (стандартная, для современных файлов)
-text = read_text("file.txt") # по умолчанию
-text = read_text("file.txt", encoding="utf-8")
-# 2.для русских текстов в Windows
-text = read_text("file.txt", encoding="cp1251")
-# 3.для старых русских файлов
-text = read_text("file.txt", encoding="koi8-r")
-# 4.западноевропейские языки
-text = read_text("file.txt", encoding="iso-8859-1")
-# ... и так далее
+ #### Как менять кодировки:
+ Если файл в другой кодировке, укажи её: encoding="cp1251"
  ```
- кодировка неправильная:
- ```python
- try:
-    text = read_text("file.txt", encoding="utf-8")
-except UnicodeDecodeError:
-    print("Ошибка")
-    text = read_text("file.txt", encoding="cp1251")
- ```
+    Пример:
+        text = read_text("file.txt")
+        text = read_text("file.txt", encoding="cp1251")
+```
+
+
+check.py:
+```python
+from io_txt_csv import read_text, write_csv
+
+#создаю тестовый файл
+from pathlib import Path
+Path("data/lab04").mkdir(parents=True, exist_ok=True)
+#файл
+with open("data/lab04/input.txt", "w", encoding="utf-8") as f:
+    f.write("йоу! прием, прием, как слышно? \nвторая строка.")
+# Тестирую как читает
+txt = read_text("data/lab04/input.txt")
+print("Прочитанный текст:")
+print(txt)
+#Тестирую CSV
+write_csv([("word", "count"), ("test", 3)], "data/lab04/check.csv")
+print("CSV файл создан!")
+
+#Проверяю что записалось
+csv_content = read_text("data/lab04/check.csv")
+print("CSV:")
+print(csv_content)
+```
+![](./images/lab04/ex01.png)
