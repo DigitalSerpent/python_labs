@@ -2,7 +2,7 @@
 
 
 
-### Задание 1
+## Задание 1
 
 ```python
 name = input("Имя: ")
@@ -13,7 +13,7 @@ print(f"Привет, {name}! Через год тебе будет {age + 1}.")
 ![01_greeting](./images/lab01/ex01.png.png)
 
 
-### Задание 2
+## Задание 2
 
 ```python
 a = float(input("a: ").replace(",", "."))
@@ -26,7 +26,7 @@ print(f"sum={sum_ab:.2f}; avg={avg_ab:.2f}")
 ![02_sum_avg](./images/lab01/ex02.png.png)
 
 
-### Задание 3
+## Задание 3
 
 ```python
 price = float(input("price: ").replace(",", "."))
@@ -43,7 +43,7 @@ print(f"Итого к оплате:    {total:.2f} ₽")
 ![03_discount_vat](./images/lab01/ex03.png.png)
 
 
-### Задание 4
+## Задание 4
 
 ```python
 m = int(input("Минуты: "))
@@ -54,7 +54,7 @@ print(f"{hours}:{minutes:02d}")
 
 ![04_minutes_to_hhmm](./images/lab01/ex04.png.png)
 
-### Задание 5
+## Задание 5
 
 ```python
 full_name = input("ФИО: ").strip()
@@ -71,7 +71,7 @@ print(f"Длина: {chars + 2}")
 ![05_initials_and_len](./images/lab01/ex05.png.png)
 
 
-### Задание 7
+## Задание 7
 
 ```python
 s = input()
@@ -104,7 +104,7 @@ print(result)
 
 # Лабораторная работа 2
 
-### Задание 1(A)
+## Задание 1(A)
 
 ```python
 def min_max(nums):
@@ -163,7 +163,7 @@ except TypeError as mistake:
 ![arrays.py](./images/lab02/exA.png)
 
 
-### Задание 2(B)
+## Задание 2(B)
 
 ```python
 
@@ -238,7 +238,7 @@ except ValueError as mistake:
 ![matrix.py](./images/lab02/exB.png)
 
 
-### Задание 3(C)
+## Задание 3(C)
 
 ```python
 
@@ -291,7 +291,7 @@ print(data(("  сидорова  анна   сергеевна ", "ABB-01", 3.99
 # Лабораторная работа 3
  
 
-### Задание А
+## Задание А
 
 
 
@@ -394,7 +394,7 @@ print("✓")
 ![](./images/lab03/ex01_2.png)
 
 
-### Задание В
+## Задание В
 
 Мой код полностью соответствовал заданию - читал из stdin и корректно обрабатывал текст. Но появилась проблема с pipe в powershell из-за несовместимости кодировок между powershell (UTF-16) и python (UTF-8).
 Поэтому я сделала несколько вариантов. В первом я обрабатываю символы срвзу как текст:
@@ -456,7 +456,7 @@ if __name__ == "__main__":
 (Ctrl+Z + Enter)
 
 
-### Задание со звездочкой
+## Задание со звездочкой
 
 ```python
 import sys
@@ -515,7 +515,7 @@ echo "Привет мир! Привет!!!" | python text_stats_2.py
 ![](./images/lab03/ex3.png)
 
 # Лабораторная работа 4
-### Задание А
+## Задание А
  ```python
  from pathlib import Path
 import csv
@@ -587,7 +587,7 @@ print(csv_content)
 ```
 ![](./images/lab04/ex01.png)
 
-### Задание В
+## Задание В
 
 ```python
 import sys
@@ -631,3 +631,194 @@ else:
 ```
 
 ![](./images/lab04/ex02.png)
+
+# ЛР5 — JSON и конвертации (JSON↔CSV, CSV→XLSX): Техническое задание
+
+#### как запустить
+Установка зависимостей
+```
+    pip install -r requirements.txt
+```
+Запуск тестового скрипта
+```
+    python test_lab05.py
+```
+## Задание A — JSON ↔ CSV
+
+```python
+import json
+import csv
+from pathlib import Path
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from lib.io_helpers import read_json, read_csv
+
+def json_to_csv(json_path: str, csv_path: str) -> None:
+    """
+    JSON-файл в CSV
+    список словарей [{...}, {...}], заполняет отсутствующие поля пустыми строчками
+    """
+    #чтение и валидация JSON
+    data = read_json(json_path)
+    #определение полей 
+    all_fields = set()
+    for item in data:
+        all_fields.update(item.keys())
+    fieldnames = sorted(all_fields)
+    #создание директории для выходного файла, если её нет
+    output_path = Path(csv_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    #запись CSV
+    with output_path.open('w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for item in data:
+            #заполнение отсутствующих полей пустыми строчками
+            row = {field: item.get(field, '') for field in fieldnames}
+            writer.writerow(row)
+def csv_to_json(csv_path: str, json_path: str) -> None:
+    """
+    CSV в JSON 
+    """
+    #чтение и валидация CSV
+    fieldnames, rows = read_csv(csv_path)
+    #создание директории для выходного файла, если её нет
+    output_path = Path(json_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    #запись JSON
+    with output_path.open('w', encoding='utf-8') as json_file:
+        json.dump(rows, json_file, ensure_ascii=False, indent=2)
+```
+
+## Задание B — CSV → XLSX
+ 
+ ```python
+ import csv
+from pathlib import Path
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from lib.io_helpers import read_csv
+def csv_to_xlsx(csv_path: str, xlsx_path: str) -> None:
+    """
+    конвертирует CSV в XLSX
+    использовать openpyxl
+    колонки не менее 8 символов
+    """
+    #чтение и валидация CSV
+    fieldnames, rows = read_csv(csv_path)
+    #создание директории для выходного файла, если её нет
+    output_path = Path(xlsx_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    #создание Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "лист1"
+    #запись заголовков
+    ws.append(fieldnames)
+    # Запись данных
+    for row in rows:
+        ws.append([row.get(field, '') for field in fieldnames])
+    #настраиваю ширину колонок
+    for col_num, column_title in enumerate(fieldnames, 1):
+        max_length = 0
+        column_letter = get_column_letter(col_num)
+        #длина заголовка
+        max_length = max(max_length, len(str(column_title)))
+        #длина данных в колонке
+        for row_num in range(2, ws.max_row + 1):
+            cell_value = ws[f"{column_letter}{row_num}"].value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        #ширина 8 символов
+        adjusted_width = max(8, max_length + 2)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    #сохраняю
+    wb.save(output_path)
+ ```
+
+
+ #### мини - наборы
+ ##### samples
+people.json
+ ```
+ [
+  {
+    "name": "Alice",
+    "age": 22,
+    "city": "SPB"
+  },
+  {
+    "name": "Bob",
+    "age": 25,
+    "city": "Moscow"
+  },
+  {
+    "name": "Charlie",
+    "age": 30,
+    "city": "London"
+  }
+]
+ ```
+people.csv
+ ```
+ name,age,city
+Alice,22,SPB
+Bob,25,Moscow
+ ```
+cities.csv
+ ```
+ city,country,population
+SPB,Russia,5000000
+Moscow,Russia,12000000
+London,UK,9000000
+ ```
+
+ #### test_lab05.py
+
+ ```python
+ import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+try:
+    #импортирую
+    from lab05.json_csv import json_to_csv, csv_to_json
+    from lab05.csv_xlsx import csv_to_xlsx
+    print("тест")
+    os.makedirs("data/lab05/out", exist_ok=True)
+    #тестирую
+    print("1 - JSON → CSV")
+    json_to_csv("data/lab05/samples/people.json", "data/lab05/out/people_from_json.csv")
+    print("2 - CSV → JSON")
+    csv_to_json("data/lab05/samples/people.csv", "data/lab05/out/people_from_csv.json")
+    print("3 - CSV → XLSX")
+    csv_to_xlsx("data/lab05/samples/people.csv", "data/lab05/out/people.xlsx")
+    print("4 - Cities CSV → XLSX.")
+    csv_to_xlsx("data/lab05/samples/cities.csv", "data/lab05/out/cities.xlsx")
+    print("\n✅ УРА РАБОТАЕТ")
+    print("результ: data/lab05/out/")
+    
+except Exception as e:
+    print(f"не работает: {e}")
+    import traceback
+    traceback.print_exc()
+ ```
+
+ ![](./images/lab05/ex.png)
+
+## Итого в работе получилось реализовать
+
+ Двусторонняя конвертация JSON ↔ CSV
+
+Экспортировать в Excel из CSV
+
+Автоширина колонок в Excel
+
+Обработать ошибоки (пустые файлы и неверные форматы)
+
+Поддержка UTF-8 (кириллица)
