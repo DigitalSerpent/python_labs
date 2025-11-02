@@ -1106,3 +1106,6 @@ python -m src.lab06.cli_convert  --help
 -  Реализованы CLI-конвертеры данных между форматами
 -  Использованы функции из предыдущих лабораторных работ
 -  Добавлена обработка ошибок и справка по командам
+
+
+<img src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3OTdpYW9sZ2FlaXUyaGFoZHNvbzI4Mnk4Z25xbzZwa3lpYzgzZTQxdSZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/CaS9NNso512WJ4po0t/giphy.gif" width="700" alt="Демонстрация работы CLI">
