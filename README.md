@@ -822,3 +822,287 @@ except Exception as e:
 Обработать ошибоки (пустые файлы и неверные форматы)
 
 Поддержка UTF-8 (кириллица)
+
+# ЛР6 — CLI‑утилиты с argparse (cat/grep‑lite + конвертеры): Техническое задание
+`Цель:` Научиться создавать консольные инструменты с аргументами командной строки, подкомандами и флагами.
+    Связь: продолжение ЛР5 (работа с JSON/CSV/XLSX) и подготовка к ЛР7 (тестирование).
+    Основная задача — обернуть существующие функции конвертации и анализа текста в CLI‑оболочки с помощью argparse.
+
+## src/lab06/cli_text.py
+
+```python
+import argparse
+import sys
+import os
+from pathlib import Path
+import re
+from collections import Counter
+
+def read_text_simple(path: str, encoding: str = "utf-8") -> str:
+    """
+    чтение текста
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Файл не найден: {path}")
+    return path.read_text(encoding=encoding)
+
+try:
+    from lib.text import normalize, tokenize, count_freq, top_n
+except ImportError:
+    try:
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+        from lib.text import normalize, tokenize, count_freq, top_n
+    except ImportError:
+        print("не удалось импортировать функции из lib/text.py")
+        sys.exit(1)
+
+def print_table(top_words):
+    if not top_words:
+        return
+    max_word_len = max(len(word) for word, count in top_words)
+    word_width = max(max_word_len, 5)
+    print(f"{'слово':<{word_width}} | частота")
+    print('-' * (word_width + 11))
+    for word, count in top_words:
+        print(f"{word:<{word_width}} | {count}")
+
+def cat_command(args):
+    """
+    cat - вывод содержимого файла
+    """
+    try:
+        content = read_text_simple(args.input)
+        lines = content.split('\n')
+        for i, line in enumerate(lines, 1):
+            if args.n: #проверка флага в аргументах командной строки
+                print(f"{i:6d}\t{line}")
+            else:
+                print(line)
+                
+    except FileNotFoundError:
+        print(f"файл '{args.input}' не найден")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ошибка при чтении файла: {e}")
+        sys.exit(1)
+
+def stats_command(args):
+    """
+    stats - анализ частот слов
+    """
+    try:
+        text = read_text_simple(args.input, encoding='utf-8')
+        normalized_text = normalize(text)
+        tokens = tokenize(normalized_text)
+        word_counts = count_freq(tokens)
+        top_words = top_n(word_counts, args.top)
+        
+        print(f"Всего слов: {len(tokens)}")
+        print(f"Уникальных слов: {len(set(tokens))}")
+        print(f"Топ-{args.top}:")
+        
+        print_table(top_words)
+            
+    except FileNotFoundError:
+        print(f"Ошибка: файл '{args.input}' не найден")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ошибка при анализе текста: {e}")
+        sys.exit(1)
+
+def main():
+    '''
+    хелпер
+    '''
+    parser = argparse.ArgumentParser(     #ArgumentParser = "анализатор аргументов", cоздает объект, который умеет парсить командную строку
+        description="CLI-утилиты для анализа текста",
+        formatter_class=argparse.RawDescriptionHelpFormatter   #типа форматируй справку как есть, без авто-переносов
+    )                   #argparse.RawDescriptionHelpFormatter - это встроенный класс в библиотеке argparse
+    subparsers = parser.add_subparsers(dest="command", help="Доступные команды")
+
+    cat_parser = subparsers.add_parser("cat", help="Вывести содержимое файла")
+    cat_parser.add_argument("--input", required=True, help="Путь к входному файлу") 
+    cat_parser.add_argument("-n", action="store_true", help="Нумеровать строки") 
+    cat_parser.set_defaults(func=cat_command)
+
+    stats_parser = subparsers.add_parser("stats", help="частоты слов в тексте")
+    stats_parser.add_argument("input", help="Путь к текстовому файлу") 
+    stats_parser.add_argument("top", nargs='?', type=int, default=5, help="Кол-во топ-слов")  
+    stats_parser.set_defaults(func=stats_command)
+
+    args = parser.parse_args()
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
+    args.func(args)
+
+if __name__ == "__main__":
+    main()
+```
+## cli_text.py
+ Утилиты для работы с текстом
+
+**Функции обработки текста(3 лаба):**
+- `normalize()` - нормализация текста (приведение к нижнему регистру, удаление знаков препинания)
+- `tokenize()` - разбивка текста на слова-токены
+- `count_freq()` - подсчет частоты слов
+- `top_n()` - получение N самых частых слов
+
+**CLI команды:**
+- `cat` - вывод содержимого файла
+  - `--input` - путь к файлу (обязательный)
+  - `-n` - флаг нумерации строк
+- `stats` - анализ частот слов
+  - `input` - путь к файлу (позиционный аргумент)
+  - `top` - количество топ-слов (опциональный, по умолчанию 5)
+
+**Обработка ошибок:**
+- `FileNotFoundError` - файл не найден
+- `Exception` - общие ошибки, описание которых я писала рядом
+
+## Примеры использования
+
+### Анализ текста
+```bash
+# Вывод файла с нумерацией
+python -m src.lab06.cli_text cat --input data/lab06/sample_text.txt -n
+
+# Анализ частот слов
+python -m src.lab06.cli_text stats data/lab06/sample_text.txt 3
+```
+
+![](/images/lab06/text.png)
+
+
+## src/lab06/cli_convert.py
+
+```python
+import argparse
+import sys
+import os
+from pathlib import Path
+try:
+    from lab05.json_csv import json_to_csv, csv_to_json
+    from lab05.csv_xlsx import csv_to_xlsx
+except ImportError:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from lab05.json_csv import json_to_csv, csv_to_json
+    from lab05.csv_xlsx import csv_to_xlsx
+
+def json2csv_command(args):
+    """
+    JSON в CSV
+    """
+    try:
+        json_to_csv(args.input, args.output)
+        print(f"сконвертировано: {args.input} → {args.output}")
+    except Exception as e:
+        print(f"oшибка: {e}")
+        sys.exit(1)
+
+def csv2json_command(args):
+    """
+    CSV в JSON
+    """
+    try:
+        csv_to_json(args.input, args.output)
+        print(f"сконвертировано: {args.input} → {args.output}")
+    except Exception as e:
+        print(f"oшибка: {e}")
+        sys.exit(1)
+
+def csv2xlsx_command(args):
+    """
+    CSV в XLSx
+    """
+    try:
+        csv_to_xlsx(args.input, args.output)
+        print(f"сконвертировано: {args.input} → {args.output}")
+    except Exception as e:
+        print(f"oшибка: {e}")
+        sys.exit(1)
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="CLI-конвертеры данных между форматами JSON, CSV, XLSX",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Доступные команды конвертации")
+
+    #json2csv
+    json2csv_parser = subparsers.add_parser("json2csv", help="Конвертировать JSON в CSV")
+    json2csv_parser.add_argument("--in", dest="input", required=True, help="Входной JSON файл") #--in - как аргумент называется в командной строке, как input в args
+    json2csv_parser.add_argument("--out", dest="output", required=True, help="Выходной CSV файл")
+    json2csv_parser.set_defaults(func=json2csv_command)
+
+    #csv2json
+    csv2json_parser = subparsers.add_parser("csv2json", help="Конвертировать CSV в JSON")
+    csv2json_parser.add_argument("--in", dest="input", required=True, help="Входной CSV файл")
+    csv2json_parser.add_argument("--out", dest="output", required=True, help="Выходной JSON файл")
+    csv2json_parser.set_defaults(func=csv2json_command)
+
+    #csv2xlsx
+    csv2xlsx_parser = subparsers.add_parser("csv2xlsx", help="Конвертировать CSV в XLSX")
+    csv2xlsx_parser.add_argument("--in", dest="input", required=True, help="Входной CSV файл")
+    csv2xlsx_parser.add_argument("--out", dest="output", required=True, help="Выходной XLSX файл")
+    csv2xlsx_parser.set_defaults(func=csv2xlsx_command)
+    args = parser.parse_args()
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
+    args.func(args)
+
+    '''
+    Traceback (most recent call last):
+  File "...", line X, in <module>
+    args.func(args)
+AttributeError: 'Namespace' object has no attribute 'func'
+без использования проверки введения пользователем значений
+    '''
+
+if __name__ == "__main__":
+    main()
+```
+
+
+
+
+## cli_convert.py
+Конвертеры между форматами данных
+
+**Использует функции из ЛР5:**
+- `json_to_csv()` - JSON → CSV
+- `csv_to_json()` - CSV → JSON  
+- `csv_to_xlsx()` - CSV → XLSX
+
+**Команды:**
+- `json2csv --in <input> --out <output>`
+- `csv2json --in <input> --out <output>`
+- `csv2xlsx --in <input> --out <output>`
+
+```Bash
+# JSON в CSV
+python -m src.lab06.cli_convert json2csv --in data/lab05/samples/people.json --out data/lab06/out/people.csv
+
+ # CSV в XLSX
+ python -m src.lab06.cli_convert csv2xlsx --in data/lab05/samples/people.csv --out data/lab06/out/people.xlsx
+```
+
+![](/images/lab06/convert.png)
+
+
+## Cправка:
+
+```Bash
+python -m src.lab06.cli_text --help
+python -m src.lab06.cli_convert  --help
+```
+![](/images/lab06/spravka.png)
+
+
+## Выполненные задачи
+-  Реализованы CLI-утилиты для анализа текста (`cat`, `stats`)
+-  Реализованы CLI-конвертеры данных между форматами
+-  Использованы функции из предыдущих лабораторных работ
+-  Добавлена обработка ошибок и справка по командам
