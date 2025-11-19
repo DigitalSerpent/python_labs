@@ -1108,4 +1108,144 @@ python -m src.lab06.cli_convert  --help
 -  Добавлена обработка ошибок и справка по командам
 
 
-<img src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3OTdpYW9sZ2FlaXUyaGFoZHNvbzI4Mnk4Z25xbzZwa3lpYzgzZTQxdSZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/CaS9NNso512WJ4po0t/giphy.gif" width="200" alt="Демонстрация работы CLI">
+
+# ЛР7 — Тестирование: pytest + стиль (black)
+
+`Цель:` научиться писать модульные тесты на pytest, измерять покрытие и поддерживать единый стиль кода (black).
+
+`Связь:` тестируем функции из src/lib/text.py (ЛР3) и src/lab05/json_csv.py (ЛР5).
+
+### Автотесты для text.py
+
+```python
+import pytest
+from src.lib.text import normalize, tokenize, count_freq, top_n
+
+def test_normalize_basic():
+    """нормалайз"""
+    result = normalize("ПрИвЕт\nМИр\t")
+    assert result == "привет мир"
+    
+def test_normalize_yo():
+    """ё"""
+    result = normalize("ёжик Ёлка")
+    assert result == "ежик елка"
+
+def test_tokenize_basic():
+    """токенайз"""
+    text = normalize("привет мир")
+    result = tokenize(text)
+    assert result == ["привет", "мир"]
+
+def test_count_freq():
+    """частота"""
+    tokens = ["я", "люблю", "python", "python"]
+    result = count_freq(tokens)
+    assert result == {"я": 1, "люблю": 1, "python": 2}
+
+def test_top_n():
+    """топ-N"""
+    freq = {"я": 1, "люблю": 3, "python": 2}
+    result = top_n(freq, 2)
+    assert result == [("люблю", 3), ("python", 2)]
+
+```
+
+
+
+
+### Автотесты для json_csv.py
+
+```python
+import pytest
+import json
+import csv
+from pathlib import Path
+from src.lab05.json_csv import json_to_csv, csv_to_json
+
+
+def test_json_to_csv_basic(tmp_path):
+    """JSON в CSV"""
+    #тестовый JSON
+    src = tmp_path / "test.json"
+    data = [{"name": "Alice", "age": 25}]
+    src.write_text(json.dumps(data), encoding="utf-8")
+    dst = tmp_path / "output.csv"
+    json_to_csv(str(src), str(dst))
+    assert dst.exists()
+    with dst.open(encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0]["name"] == "Alice"
+
+def test_csv_to_json_basic(tmp_path):
+    """CSV в JSON"""
+    src = tmp_path / "test.csv"
+    with src.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["name", "age"])
+        writer.writeheader()
+        writer.writerow({"name": "Maria", "age": "30"})
+    dst = tmp_path / "output.json"
+    csv_to_json(str(src), str(dst))
+    assert dst.exists()
+    with dst.open(encoding="utf-8") as f:
+        data = json.load(f)
+    assert len(data) == 1
+    assert data[0]["name"] == "Maria"
+
+```
+
+
+![](/images/lab07/jsontests.png)
+
+- тесты работают
+
+![](/images/lab07/form.png)
+
+- стиль проверен
+
+![](/images/lab07/formating.png)
+
+- форматирование
+
+
+## пример запуска
+```
+#зависимости
+pip install pytest black
+
+#тесты
+python -m pytest -v
+
+#стиль
+python -m black --check src/ tests/
+```
+
+## Выполненные задачи:
+- Реализованы автотесты для модулей `text.py` и `json_csv.py`
+- Написано 7 тестов, покрывающих основные функции  
+- Использован pytest для модульного тестирования
+- Проверен стиль кода с помощью black
+- Все тесты успешно проходят (7/7 PASSED)
+- Код отформатирован согласно стандартам PEP 8
+- Добавлена конфигурация проекта в `pyproject.toml`
+- Создан отчет со скриншотами
+
+done
+
+
+
+
+
+
+
+
+
+
+<img src="https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif" width="400" alt="Танцующая панда">
+
+
+
+
+

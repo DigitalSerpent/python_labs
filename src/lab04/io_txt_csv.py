@@ -1,6 +1,7 @@
 from pathlib import Path
 import csv
 
+
 def read_text(path: str | Path, encoding: str = "utf-8") -> str:
     """
     Читает файл и возвращает содержимое как строкчку
@@ -12,7 +13,10 @@ def read_text(path: str | Path, encoding: str = "utf-8") -> str:
     path = Path(path)
     return path.read_text(encoding=encoding)
 
-def write_csv(rows: list[tuple | list], path: str | Path, header: tuple[str, ...] | None = None) -> None:
+
+def write_csv(
+    rows: list[tuple | list], path: str | Path, header: tuple[str, ...] | None = None
+) -> None:
     """
     Создаёт CSV файл с данными
     rows - список строк данных
@@ -30,7 +34,7 @@ def write_csv(rows: list[tuple | list], path: str | Path, header: tuple[str, ...
             if len(row) != first_length:
                 raise ValueError(f"Строка {i} имеет другую длину")
     # Записываю CSV
-    with path.open('w', newline='', encoding='utf-8') as f:
+    with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if header:
             writer.writerow(header)

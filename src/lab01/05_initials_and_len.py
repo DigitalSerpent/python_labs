@@ -1,8 +1,8 @@
 full_name = input("ФИО: ").strip()
-chars = len(full_name.replace(' ', ''))
+chars = len(full_name.replace(" ", ""))
 
 words = full_name.split()
-initials = ''.join(word[0].upper() for word in words if word)
+initials = "".join(word[0].upper() for word in words if word)
 
 
 print(f"Инициалы: {initials}.")
