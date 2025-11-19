@@ -1222,6 +1222,16 @@ python -m pytest -v
 python -m black --check src/ tests/
 ```
 
+### ★ Покрытие кода:
+
+```bash
+pytest --cov=src --cov-report=term-missing
+```
+
+
+![](/images/lab07/pokritie.png)
+
+
 ## Выполненные задачи:
 - Реализованы автотесты для модулей `text.py` и `json_csv.py`
 - Написано 7 тестов, покрывающих основные функции  
@@ -1231,6 +1241,11 @@ python -m black --check src/ tests/
 - Код отформатирован согласно стандартам PEP 8
 - Добавлена конфигурация проекта в `pyproject.toml`
 - Создан отчет со скриншотами
+
+
+
+
+
 
 done
 
