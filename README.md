@@ -1246,8 +1246,412 @@ pytest --cov=src --cov-report=term-missing
 
 
 
+# ЛР8 – ООП в Python: @dataclass Student, методы и сериализация
 
-done
+`Цель:` изучить основы объектно-ориентированного программирования в Python, научиться описывать модели данных с помощью @dataclass, реализовывать методы и валидацию, сериализовывать/десериализовывать объекты.
+
+`Cвязь:` продолжаем работу с файлами и сериализацией из ЛР5, логику структуры и оформления наследуем из предыдущих ЛР. Основная задача — реализовать полноценную модель студента, экспорт/импорт в JSON и корректные методы экземпляра.
+
+### Модель Student (models.py)
+
+```python
+
+from dataclasses import dataclass
+from datetime import datetime, date
+import re
+
+@dataclass
+class Student:
+    fio: str
+    birthdate: str  #YYYY-MM-DD
+    group: str
+    gpa: float      #0-5
+    
+    def __post_init__(self):
+        #дата
+        try:
+            datetime.strptime(self.birthdate, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"неверный формат у даты:{self.birthdate}")
+        
+        #GPA
+        if not (0 <= self.gpa <= 5):
+            raise ValueError(f"неверный формат гпа: {self.gpa}")
+        
+        #фио
+        if len(self.fio.split()) < 2:
+            raise ValueError(f"неверный формат у фио: {self.fio}")
+    
+    def age(self) -> int:
+        """возвращает колво полных лет"""
+        birth_date = datetime.strptime(self.birthdate, "%Y-%m-%d").date()
+        today = date.today()
+        age = today.year - birth_date.year
+        
+        #проверка на то, был ли уже др
+        if today.month < birth_date.month or (today.month == birth_date.month and today.day < birth_date.day):
+            age -= 1 
+        return age
+    
+    def to_dict(self) -> dict:
+        """преобразует объект в словарь для сериализации"""
+        return {
+            "fio": self.fio,
+            "birthdate": self.birthdate,
+            "group": self.group,
+            "gpa": self.gpa
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict):
+        """создает объект из словаря"""
+        return cls(
+            fio=data["fio"],
+            birthdate=data["birthdate"],
+            group=data["group"],
+            gpa=data["gpa"]
+        )
+    
+    def __str__(self):
+        """вывод информации о студенте"""
+        return f"Студент: {self.fio}, {self.age()} лет, группа {self.group}, GPA: {self.gpa}"
+
+```
+
+### Сериализация (serialize.py)
+
+```python
+
+import json
+from pathlib import Path
+from .models import Student
+
+def students_to_json(students: list[Student], path: str) -> None:
+    """
+    список студентов в JSON
+    """
+    path_obj = Path(path)
+    #папки если их нет
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
+    
+    data = [student.to_dict() for student in students]
+    
+    with path_obj.open('w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2, separators=(',', ': '))
+
+def students_from_json(path: str) -> list[Student]:
+    """
+    список студентов ИЗ JSON 
+    """
+    path_obj = Path(path)
+    
+    if not path_obj.exists():           #проверка существования файла
+        raise FileNotFoundError(path)
+    
+    with path_obj.open('r', encoding='utf-8') as f: #json.load(f) - читает JSON и преобразует в список словарей
+        data = json.load(f)
+    
+    students = []
+    for item in data:
+        try:
+            student = Student.from_dict(item)
+            students.append(student)
+        except (ValueError, KeyError) as e:
+            print(e)
+    
+    return students
+```
+
+#### Пример JSON файла
+```python
+[
+  {
+    "fio": "Ivanov Ivan",
+    "birthdate": "2000-05-15",
+    "group": "SE-01", 
+    "gpa": 4.5
+  }
+]
+```
+
+#### пример запуска
+```python
+import sys, os
+sys.path.append('C:/Users/maria/Desktop/python_labs')
+
+from src.lab08.models import Student
+from src.lab08.serialize import students_to_json
+
+#студент
+s = Student('Ivanov Ivan', '2000-05-15', 'SE-01', 4.5)
+print('Student:', s)
+print('Age:', s.age())
+
+#cейв в JSON
+os.makedirs('data/lab08', exist_ok=True)
+students_to_json([s], 'data/lab08/students_output.json')
+print('SUCCESS! JSON saved!')
+```
+
+
+![](/images/lab08/тестирование%208й.png)
+
+
+## Выполненные задачи:
+- Реализована модель Student с использованием @dataclass
+- Добавлена валидация данных в post_init
+- Реализованы методы: age(), to_dict(), from_dict(), str()
+- Созданы функции сериализации students_to_json() и students_from_json()
+- Протестирована работа модели и сериализации
+- Созданы примеры JSON файлов в data/lab08/
+
+
+
+
+# ЛР9 — «База данных» на CSV: класс Group, CRUD-операции и CLI
+
+`Цель:` реализовать простейшее хранилище данных студентов на основе CSV-файла, отработать CRUD-операции (Create / Read / Update / Delete) и научиться работать с ними через отдельный класс Group.
+
+`Связь:` ЛР9 использует Student из ЛР8 и утилиты работы с CSV из ЛР4–ЛР5. Также создаёт основу для CLI-утилиты в ЛР10.
+
+
+
+### Класс Group (group.py)
+```python
+import csv
+from pathlib import Path
+from typing import List
+from src.lab08.models import Student
+
+class Group:
+    def __init__(self, storage_path: str):
+        """
+        инициализация группы с путем к CSV
+        """
+        self.path = Path(storage_path)
+        self._ensure_storage_exists()
+    
+    def _ensure_storage_exists(self):
+        """
+        файл с заголовком, если его нет
+        """
+        if not self.path.exists():
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self.path.open('w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['fio', 'birthdate', 'group', 'gpa'])
+    
+    def _read_all(self) -> List[dict]:
+        """
+         записи из CSV 
+        """
+        students = []
+        with self.path.open('r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                #GPA в float
+                row['gpa'] = float(row['gpa'])
+                students.append(row)
+        return students
+    
+    def _write_all(self, students: List[dict]):
+        """
+        записи в CSV 
+        """
+        with self.path.open('w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=['fio', 'birthdate', 'group', 'gpa'])
+            writer.writeheader()
+            writer.writerows(students)
+    
+    def list(self) -> List[Student]:
+        """
+        студенты как объектыы Student
+        """
+        rows = self._read_all()
+        students = []
+        for row in rows:
+            try:
+                student = Student.from_dict(row)
+                students.append(student)
+            except (ValueError, KeyError) as e:
+                print(e)
+        return students
+    
+    def add(self, student: Student):
+        """
+        новый студент в CSV
+        """
+        rows = self._read_all()
+        #проверка на одноименника
+        for row in rows:
+            if row['fio'] == student.fio:
+                raise ValueError(f"ФИО '{student.fio}' есть уже")
+        
+        rows.append(student.to_dict())
+        self._write_all(rows)
+    
+    def find(self, substr: str) -> List[Student]:
+        """
+        находит студента по подстроке в ФИО
+        """
+        all_students = self.list()
+        return [s for s in all_students if substr.lower() in s.fio.lower()]
+    
+    def remove(self, fio: str) -> bool:
+        """
+        удаляет студента по ФИО
+        возвращает True если студент был удален, False если не нашел
+        """
+        rows = self._read_all()
+        initial_count = len(rows)
+        
+        rows = [row for row in rows if row['fio'] != fio]
+        
+        if len(rows) < initial_count:
+            self._write_all(rows)
+            return True
+        return False
+    
+    def update(self, fio: str, **fields):
+        """
+        обновляет поля существующего студента
+        """
+        rows = self._read_all()
+        updated = False
+        
+        for row in rows:
+            if row['fio'] == fio:
+                for field, value in fields.items():
+                    if field in row:
+                        row[field] = value
+                updated = True
+                break
+        
+        if updated:
+            self._write_all(rows)
+        else:
+            raise ValueError(f"ФИО '{fio}' не найден")
+    
+    def stats(self) -> dict:
+        """
+        ★ доп задание со звездочкой: статистика по группе ★
+        """
+        students = self.list()
+        if not students:
+            return {
+                "count": 0,
+                "min_gpa": 0,
+                "max_gpa": 0,
+                "avg_gpa": 0,
+                "groups": {},
+                "top_5_students": []
+            }
+        
+        gpas = [s.gpa for s in students]
+        groups = {}
+        
+        for student in students:
+            groups[student.group] = groups.get(student.group, 0) + 1
+        
+        # сортировочка по gpa по убыванию
+        sorted_students = sorted(students, key=lambda s: s.gpa, reverse=True)
+        top_5 = [{"fio": s.fio, "gpa": s.gpa} for s in sorted_students[:5]]
+        
+        return {
+            "count": len(students),
+            "min_gpa": min(gpas),
+            "max_gpa": max(gpas),
+            "avg_gpa": sum(gpas) / len(gpas),
+            "groups": groups,
+            "top_5_students": top_5
+        }
+```
+### Тестирование CRUD операций
+
+```python
+
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
+from src.lab09.group import Group
+from src.lab08.models import Student
+
+def main():
+    print("--  9 Лаба  --")
+    
+    #инициализация группы
+    group = Group("data/lab09/students.csv")   #group становится нашей "базой данных" студентов
+    print("инициализирована")
+    
+    #добавление студентов
+    print("\n1. добавление студентов:")
+    student1 = Student("Иванов Иван Иванович", "2005-05-15", "SE-01", 4.5)
+    student2 = Student("Гусева Мария Александровна", "2001-01-01", "CS-02", 3.8)
+    student3 = Student("Корней Корнеевич", "1923-08-20", "AI-03", 4.9)
+    
+    group.add(student1)
+    group.add(student2)
+    group.add(student3)
+    print("добавлены")
+    
+    #вывод списка
+    print("\n2. список всех студентов:")
+    all_students = group.list()
+    for student in all_students:
+        print(f"  - {student}")
+    
+    #поиск
+    print("\n3. поиск по подстроке 'Иван':")
+    found = group.find("Иван")
+    for student in found:
+        print(f"  - Найден: {student}")
+    
+    #обновление
+    print("\n4. Обновление GPA студента Иванов:")
+    group.update("Иванов Иван Иванович", gpa=4.8)
+    print("GPA обновился")
+    
+    #статистика
+    print("\n5. статистика группы:")
+    stats = group.stats()
+    print(f"  Количество студентов: {stats['count']}")
+    print(f"  Средний GPA: {stats['avg_gpa']:.2f}")
+    print(f"  Группы: {stats['groups']}")
+    
+    #удаление
+    print("\n6. удаление студента Гусевой:")
+    if group.remove("Гусева Мария Александровна"):
+        print("студент удален")
+    else:
+        print("студент не найден")
+        
+    #финальный список
+    print("\n7. финальный список студентов:")
+    final_students = group.list()
+    for student in final_students:
+        print(f"  - {student}")
+
+if __name__ == "__main__":
+    main()
+```
+### пример запуска
+```
+python test_lab09.py
+```
+### ★★ задание со звездочкой ★★
+#### Расширенная аналитика по группе
+
+![](/images/lab09/9я.png)
+
+
+## Выполненные задачи:
+- Реализован класс Group для работы с CSV-базой данных
+- Реализованы CRUD операции: add, list, find, remove, update
+- Добавлена валидация данных и обработка ошибок
+- Реализована статистика по группе (задание со звёздочкой)
+- Протестирована работа всех операций
+- Создан CSV файл в data/lab09/students.csv
 
 
 
@@ -1258,9 +1662,17 @@ done
 
 
 
-<img src="https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif" width="400" alt="Танцующая панда">
 
 
 
 
 
+
+
+
+
+
+
+<p align="center">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWlvbjNrYnkxbmd5czVhMDlrdnB6eTJhMnFndWxjMTJ0NnBhbnprMCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/hY8zxeuFn4tjRw0SXf/giphy.gif" alt="Демонстрация работы проекта" width="200">
+</p>
