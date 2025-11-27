@@ -1658,8 +1658,256 @@ python test_lab09.py
 
 
 
+# ЛР10 — Структуры данных: Stack, Queue, Linked List и бенчмарки
+`Цель:` реализовать базовые структуры данных (стек, очередь, связный список), сравнить их производительность и научиться думать в терминах асимптотики (O(1), O(n)).
+
+## Реализованные структуры:
+
+### Stack (LIFO)
+```python
+stack = Stack()
+stack.push("A")      # O(1)
+stack.push("B")      # O(1)
+top = stack.peek()   # O(1) → "B"
+item = stack.pop()   # O(1) → "B" 
+```
+
+### Queue (FIFO)
+```python
+queue = Queue()
+queue.enqueue("A")   # O(1)
+queue.enqueue("B")   # O(1)
+first = queue.peek() # O(1) → "A"
+item = queue.dequeue() # O(1) → "A"
+```
+
+### SinglyLinkedList
+```python
+lst = SinglyLinkedList()
+lst.append("A")      # O(1)
+lst.prepend("B")     # O(1)  
+lst.insert(1, "C")   # O(n)
+lst.remove_at(0)     # O(1)
+``` 
+
+### Stack (structures.py)
+```python
+from collections import deque
+from typing import Any, Optional
+
+class Stack:
+    """
+    cтек (LIFO) - Last In, First Out
+    """
+    def __init__(self):
+        self._data = []
+    
+    def push(self, item: Any) -> None:
+        """добавить элемент на вершину стека"""
+        self._data.append(item)
+    
+    def pop(self) -> Any:
+        """снять верхний элемент стека и вернуть его"""
+        if self.is_empty():
+            raise IndexError("пустой стек")
+        return self._data.pop()
+    
+    def peek(self) -> Optional[Any]:
+        """вернуть верхний элемент без удаления"""
+        if self.is_empty():
+            return None
+        return self._data[-1]
+    
+    def is_empty(self) -> bool:
+        """проверить пустой ли стек"""
+        return len(self._data) == 0
+    
+    def __len__(self) -> int:
+        """кол-во элементов в стеке"""
+        return len(self._data)
+    
+    def __repr__(self) -> str:
+        return f"Stack({self._data})"
+
+```
+
+### Queue (structures.py)
+
+```python
 
 
+class Queue:
+    """
+    очередь (FIFO) - First In, First Out
+    """
+    def __init__(self):
+        self._data = deque()
+    
+    def enqueue(self, item: Any) -> None:
+        """добавить элемент в конец очереди"""
+        self._data.append(item)
+    
+    def dequeue(self) -> Any:
+        """взять элемент из начала очереди и вернуть его"""
+        if self.is_empty():
+            raise IndexError("пустая очередб")
+        return self._data.popleft()
+    
+    def peek(self) -> Optional[Any]:
+        """вернуть первый элемент без удаления"""
+        if self.is_empty():
+            return None
+        return self._data[0]
+    
+    def is_empty(self) -> bool:
+        """проверить пустая ли очередь"""
+        return len(self._data) == 0
+    
+    def __len__(self) -> int:
+        """кол-во элементов в очереди"""
+        return len(self._data)
+    
+    def __repr__(self) -> str:
+        return f"Queue({list(self._data)})"
+
+```
+
+### SinglyLinkedList (linked_list.py)
+
+```python
+from typing import Any, Optional, Iterator
+
+class Node:
+    """
+    узел односвязного списка
+    """
+    def __init__(self, value: Any):
+        self.value = value
+        self.next: Optional['Node'] = None
+    
+    def __repr__(self) -> str:
+        return f"Node({self.value})"
+
+
+class SinglyLinkedList:
+    """
+    сам односвязный список
+    """
+    def __init__(self):
+        self.head: Optional[Node] = None
+        self.tail: Optional[Node] = None
+        self._size = 0
+    
+    def append(self, value: Any) -> None:
+        """добавить элемент в конец списка за O(1)"""
+        new_node = Node(value)
+        
+        if self.head is None:
+            self.head = new_node
+            self.tail = new_node
+        else:
+            self.tail.next = new_node
+            self.tail = new_node
+        
+        self._size += 1
+    
+    def prepend(self, value: Any) -> None:
+        """добавить элемент в начало списка за O(1)"""
+        new_node = Node(value)
+        
+        if self.head is None:
+            self.head = new_node
+            self.tail = new_node
+        else:
+            new_node.next = self.head
+            self.head = new_node
+        
+        self._size += 1
+    
+    def insert(self, idx: int, value: Any) -> None:
+        """вставить элемент по индексу"""
+        if idx < 0 or idx > self._size:
+            raise IndexError(f"индекс {idx} вне диапазона [0, {self._size}]")
+        
+        if idx == 0:
+            self.prepend(value)
+            return
+        elif idx == self._size:
+            self.append(value)
+            return
+        
+        # вставка в середину
+        new_node = Node(value)
+        current = self.head
+        for _ in range(idx - 1):
+            current = current.next
+        
+        new_node.next = current.next
+        current.next = new_node
+        self._size += 1
+    
+    def remove_at(self, idx: int) -> None:
+        """удалить элемент по индексу"""
+        if idx < 0 or idx >= self._size:
+            raise IndexError(f"индекс {idx} вне диапазона [0, {self._size})")
+        
+        if idx == 0:
+            # удаление первого элемента
+            self.head = self.head.next
+            if self.head is None:
+                self.tail = None
+        else:
+            # удаление из середины или с конца
+            current = self.head
+            for _ in range(idx - 1):
+                current = current.next
+            
+            current.next = current.next.next
+            if current.next is None:
+                self.tail = current
+        
+        self._size -= 1
+    
+    def __iter__(self) -> Iterator[Any]:
+        """итератор по значениям в списке"""
+        current = self.head
+        while current is not None:
+            yield current.value
+            current = current.next
+    
+    def __len__(self) -> int:
+        """кол-во элементов в списке"""
+        return self._size
+    
+    def __repr__(self) -> str:
+        """строковое представление списка"""
+        values = list(self)
+        return f"SinglyLinkedList({values})"
+    
+    def pretty_print(self) -> str:
+        """★★★Красивый вывод в формате [A] -> [B] -> [C] -> None★★★"""
+        elements = []
+        current = self.head
+        while current is not None:
+            elements.append(f"[{current.value}]")
+            current = current.next
+        elements.append("None")
+        return " -> ".join(elements)
+
+```
+
+
+![](/images/lab10/9я.png)
+
+
+## Выполненные задачи:
+
+- Реализованы Stack на базе list (LIFO)
+- Реализованы Queue на базе deque (FIFO)
+- Реализован SinglyLinkedList с узлами Node
+- Протестированы все CRUD операции для каждой структуры
+- Добавлены методы для красивого вывода связей
+- Проверена корректность работы всех методов
 
 
 
